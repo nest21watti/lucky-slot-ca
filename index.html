@@ -1,1 +1,1153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>L2S Pro</title>
+<meta name="apple-mobile-web-app-title" content="L2S Pro">
+<meta name="application-name" content="L2S Pro">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#f0f4f8;margin:0;padding:4px;color:#1e293b;min-height:100dvh;display:flex;align-items:flex-start;justify-content:center}
+.container{width:100%;max-width:480px;background:#fff;padding:6px 8px 8px;border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.qr-section{background:linear-gradient(135deg,#e3f2fd 0%,#bbdefb 100%);border:2px solid #90caf9;border-radius:14px;text-align:center;padding:5px 6px 8px;margin-bottom:6px;transform:rotate(180deg);box-shadow:inset 0 2px 4px rgba(255,255,255,.6)}
+.qr-section.hidden-for-reg{display:none}
+.ca-logo{width:80px;height:auto;margin-bottom:2px;display:inline-block}
+.store-title{font-size:.9rem;font-weight:800;color:#0d47a1;margin:0 0 1px;line-height:1.15;letter-spacing:-.02em}
+.store-subtitle{font-size:.9rem;font-weight:800;color:#d93025;margin:0 0 5px;line-height:1.15}
+.qr-box-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;padding:6px;background:#fff;border-radius:12px;box-shadow:0 3px 10px rgba(13,71,161,.16);width:212px;height:212px}
+#qrcode{width:200px;height:200px;display:flex;align-items:center;justify-content:center}
+#qrcode img,#qrcode canvas{display:block;margin:0 auto}
+.placeholder-text{color:#555;font-size:.82rem;font-weight:600;line-height:1.5;padding:0 6px}
+.used-overlay{position:absolute;inset:0;background:rgba(255,255,255,.88);border-radius:12px;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:5}
+.used-overlay.show{display:flex}
+.used-stamp{border:3px solid #64748b;color:#475569;font-size:1.2rem;font-weight:900;padding:6px 16px;border-radius:8px;background:#fff;letter-spacing:.08em}
+.used-stamp.ng3{border-color:#b91c1c;color:#b91c1c}
+.mode-bar{display:flex;gap:3px;margin-bottom:6px}
+.mode-btn{flex:1;border:1.5px solid #cbd5e1;background:#f8fafc;color:#475569;font-size:.71rem;font-weight:800;padding:6px 1px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.mode-btn.active{background:#1a73e8;border-color:#1a73e8;color:#fff}
+.icon-btn{width:30px;border:1.5px solid #cbd5e1;background:#f8fafc;border-radius:8px;font-size:.84rem;cursor:pointer;flex-shrink:0;padding:0}
+.icon-btn:active{background:#e2e8f0}
+.icon-btn.needs-setup{background:#fef2f2;border-color:#ef4444}
+.icon-btn.muted{background:#f1f5f9;color:#94a3b8}
+.panel{display:none}
+.panel.active{display:block}
+.lot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:6px}
+.lot-btn{border:1.5px solid #cbd5e1;background:#f8fafc;color:#334155;border-radius:8px;padding:5px 2px;cursor:pointer;text-align:center;overflow:hidden;transition:all .12s}
+.lot-btn.active{background:#0d47a1;border-color:#0d47a1;color:#fff;box-shadow:0 2px 5px rgba(13,71,161,.28)}
+.lot-btn.low:not(.active){background:#fff7ed;border-color:#fdba74}
+.lot-name{display:block;font-size:.76rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2}
+.lot-rem{display:block;font-size:.66rem;font-weight:700;opacity:.85;line-height:1.1;margin-top:1px}
+.meta-row{display:flex;justify-content:space-between;align-items:center;font-size:.73rem;font-weight:700;color:#475569;margin-bottom:5px;padding:0 2px}
+.toast-msg{color:#0f766e;font-weight:800;min-height:1.1em}
+.wheel-wrapper{position:relative;height:114px;border-radius:10px;background:#f8fafc;border:2px solid #cbd5e1;overflow:hidden;margin-bottom:8px}
+.wheel-highlight{position:absolute;top:38px;left:0;right:0;height:38px;background:rgba(26,115,232,.10);border-top:2px solid #1a73e8;border-bottom:2px solid #1a73e8;pointer-events:none;z-index:2}
+.wheel-fade-top,.wheel-fade-bottom{position:absolute;left:0;right:0;height:28px;pointer-events:none;z-index:3}
+.wheel-fade-top{top:0;background:linear-gradient(to bottom,rgba(248,250,252,.92),rgba(248,250,252,0))}
+.wheel-fade-bottom{bottom:0;background:linear-gradient(to top,rgba(248,250,252,.92),rgba(248,250,252,0))}
+.wheel-scroll{height:114px;overflow-y:auto;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;position:relative;z-index:1}
+.wheel-scroll::-webkit-scrollbar{display:none}
+.wheel-spacer{height:38px;flex-shrink:0}
+.wheel-item{height:38px;display:flex;align-items:center;justify-content:center;gap:6px;scroll-snap-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:slashed-zero;font-size:1.18rem;font-weight:800;color:#0f172a;letter-spacing:.02em;cursor:pointer;user-select:none;padding:0 6px}
+.wheel-item .item-no{font-size:.7rem;color:#64748b;font-family:sans-serif;min-width:22px;text-align:right;flex-shrink:0}
+.wheel-item .item-origin{font-family:sans-serif;font-size:.66rem;font-weight:800;background:#e0e7ff;color:#3730a3;padding:2px 5px;border-radius:5px;max-width:56px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.wheel-item .item-code{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wheel-item .status-badge{font-family:sans-serif;font-size:.66rem;font-weight:900;padding:2px 5px;border-radius:5px;flex-shrink:0;display:none}
+.wheel-item.st-ng1 .status-badge{display:inline-block;background:#fef08a;color:#854d0e;border:1px solid #eab308}
+.wheel-item.st-ng2 .status-badge{display:inline-block;background:#fed7aa;color:#9a3412;border:1px solid #f97316}
+.wheel-item.st-ng3,.wheel-item.st-done{color:#94a3b8}
+.wheel-item.st-ng3 .item-code,.wheel-item.st-done .item-code{text-decoration:line-through}
+.wheel-item.st-ng3 .status-badge{display:inline-block;background:#fecaca;color:#991b1b}
+.wheel-item.st-done .status-badge{display:inline-block;background:#cbd5e1;color:#475569}
+.wheel-empty{height:114px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:.78rem;font-weight:700;color:#64748b;padding:0 12px;line-height:1.45}
+.sliders-stack{display:flex;flex-direction:column;gap:7px}
+.slide-track{position:relative;height:44px;border-radius:22px;background:#fee2e2;border:1.5px solid #fca5a5;overflow:hidden;user-select:none;touch-action:none}
+.slide-track.type-ng{background:#fef3c7;border-color:#fcd34d}
+.slide-track.mode-undo{background:#e0f2fe;border-color:#7dd3fc}
+.slide-track.disabled{opacity:.42;pointer-events:none;background:#e2e8f0;border-color:#cbd5e1}
+.slide-fill{position:absolute;top:0;left:0;bottom:0;width:0;background:rgba(217,48,37,.22);pointer-events:none}
+.slide-track.type-ng .slide-fill{background:rgba(217,119,6,.24)}
+.slide-track.mode-undo .slide-fill{background:rgba(26,115,232,.22)}
+.slide-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-left:40px;font-size:.82rem;font-weight:800;color:#b91c1c;pointer-events:none}
+.slide-track.type-ng .slide-label{color:#92400e}
+.slide-track.mode-undo .slide-label{color:#0369a1}
+.slide-thumb{position:absolute;top:3px;left:3px;width:48px;height:35px;border-radius:18px;background:#d93025;color:#fff;font-size:.94rem;font-weight:900;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.2);cursor:grab;touch-action:none;z-index:2}
+.slide-track.type-ng .slide-thumb{background:#d97706}
+.slide-track.mode-undo .slide-thumb{background:#1a73e8}
+.slide-thumb.animating,.slide-fill.animating{transition:transform .2s ease,width .2s ease}
+.filter-row{display:flex;gap:4px;margin-bottom:6px}
+.filter-btn{flex:1;border:1.5px solid #cbd5e1;background:#f8fafc;color:#475569;font-size:.73rem;font-weight:800;padding:6px 2px;border-radius:7px;cursor:pointer}
+.filter-btn.active{background:#d97706;border-color:#d97706;color:#fff}
+.reg-box{background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;padding:10px;margin-bottom:10px}
+.reg-title{font-size:.86rem;font-weight:800;color:#0d47a1;margin:0 0 6px}
+.reg-subdesc{font-size:.73rem;font-weight:700;color:#334155;line-height:1.45;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:6px 8px;margin-bottom:8px}
+.reg-radio-row{display:flex;gap:8px;margin-bottom:8px}
+.reg-radio-label{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;background:#fff;border:1.5px solid #cbd5e1;border-radius:8px;padding:7px 4px;font-size:.78rem;font-weight:800;cursor:pointer}
+.reg-radio-label input{margin:0}
+.reg-input,.reg-select{width:100%;padding:9px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.9rem;font-weight:700;background:#fff}
+.reg-btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.action-btn{border:none;border-radius:9px;padding:9px 6px;font-size:.8rem;font-weight:800;color:#fff;cursor:pointer;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,.12)}
+.action-btn:active{transform:translateY(1px)}
+.action-btn:disabled{opacity:.6;pointer-events:none}
+.btn-blue{background:#1a73e8}.btn-indigo{background:#4f46e5}.btn-teal{background:#0f766e}.btn-gray{background:#64748b}.btn-green{background:#15803d}.btn-red{background:#dc2626}.btn-full{width:100%}
+.live-cam-wrap{display:none;background:#000;border-radius:10px;overflow:hidden;margin-bottom:5px}
+.live-cam-wrap.show{display:block}
+.cam-stage{position:relative;overflow:hidden;background:#000}
+.live-video{width:100%;max-height:240px;object-fit:cover;display:block}
+.live-video.compact{height:155px;max-height:155px}
+.cam-guide{position:absolute;top:50%;left:8%;right:8%;height:68%;transform:translateY(-50%);border:2px dashed rgba(255,255,255,.88);border-radius:8px;pointer-events:none}
+.cam-guide.narrow{height:66%}
+.cam-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .18s ease-out;z-index:10}
+.cam-flash.active{opacity:.9;transition:none}
+.cam-controls{display:flex;gap:6px;padding:5px;background:#1e293b}
+.progress-bar-wrap{background:#e2e8f0;height:10px;border-radius:999px;overflow:hidden;margin:6px 0 8px}
+.progress-bar-fill{height:100%;width:0%;background:#1a73e8;transition:width .25s}
+.progress-bar-fill.complete{background:#16a34a}
+.reg-list{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.reg-item{display:flex;align-items:center;gap:5px;background:#fff;border:1.5px solid #cbd5e1;border-radius:8px;padding:5px 7px}
+.reg-item.dup{border-color:#ef4444;background:#fef2f2}
+.reg-item-no{font-size:.74rem;font-weight:800;color:#64748b;min-width:24px}
+.reg-item-input{flex:1;min-width:0;border:none;background:transparent;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:slashed-zero;font-size:1.12rem;font-weight:800;letter-spacing:.03em;color:#0f172a;outline:none}
+.reg-dup-tag{font-size:.64rem;font-weight:800;color:#b91c1c;background:#fee2e2;padding:2px 5px;border-radius:4px;white-space:nowrap}
+.reg-del-btn{border:none;background:#f1f5f9;color:#64748b;border-radius:6px;padding:4px 7px;font-size:.78rem;font-weight:800;cursor:pointer}
+.ocr-status{font-size:.74rem;font-weight:800;color:#0369a1;margin:2px 0 4px;min-height:1.1em;line-height:1.25}
+.ocr-status.one-line{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ocr-status:empty{min-height:0;margin:0}
+.bulk-textarea{width:100%;height:74px;border:1.5px solid #cbd5e1;border-radius:8px;padding:8px;font-size:.82rem;resize:vertical;margin-bottom:6px}
+.instant-cam-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:5px}
+.instant-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px}
+.instant-chips:empty{margin-bottom:0}
+.instant-chip{border:1.5px solid #93c5fd;background:#eff6ff;color:#1e40af;border-radius:6px;padding:4px 8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:slashed-zero;font-size:.9rem;font-weight:800;cursor:pointer}
+.instant-chip.active{background:#1a73e8;border-color:#1a73e8;color:#fff}
+.form-group{margin-bottom:5px}
+.paste-label{display:block;font-size:.72rem;font-weight:800;margin-bottom:2px;color:#475569}
+.paste-area{width:100%;padding:6px 10px;border:2px solid #cbd5e1;border-radius:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:slashed-zero;font-size:1.3rem;font-weight:800;letter-spacing:.05em;text-align:center;resize:none;height:42px;background:#fafafa;color:#0f172a}
+.paste-area::placeholder{font-size:.78rem;font-family:sans-serif;letter-spacing:0;color:#94a3b8}
+.paste-area:focus{border-color:#1a73e8;background:#fff;outline:none}
+.button-row{display:flex;gap:6px}
+.sub-button{flex:1;color:#fff;border:none;padding:9px;font-size:.81rem;font-weight:800;border-radius:8px;cursor:pointer}
+#keyboardToggleBtn{background:#5f6368}
+#clearBtn{background:#d93025}
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.58);display:none;align-items:center;justify-content:center;padding:12px;z-index:100}
+.modal-backdrop.show{display:flex}
+.modal-card{width:100%;max-width:420px;max-height:92dvh;overflow-y:auto;background:#fff;border-radius:16px;padding:15px;box-shadow:0 12px 32px rgba(0,0,0,.25)}
+.modal-title{font-size:1rem;font-weight:900;color:#0d47a1;margin:0 0 6px}
+.modal-desc{font-size:.75rem;color:#475569;line-height:1.45;margin:0 0 10px}
+.field-label{display:block;font-size:.77rem;font-weight:800;color:#334155;margin:0 0 4px}
+.modal-input{width:100%;padding:9px 10px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:.84rem;margin-bottom:9px}
+.pass-wrap{display:flex;gap:6px;margin-bottom:9px}
+.pass-wrap .modal-input{margin-bottom:0;flex:1}
+.pass-toggle{border:1.5px solid #cbd5e1;background:#f8fafc;border-radius:8px;padding:0 10px;font-size:.78rem;font-weight:800;cursor:pointer}
+.modal-msg{font-size:.77rem;font-weight:800;min-height:1.15em;margin-bottom:8px;color:#dc2626}
+.modal-msg.ok{color:#15803d}
+.modal-actions{display:flex;gap:8px;margin-bottom:8px}
+.backup-box{border-top:1.5px solid #e2e8f0;margin-top:10px;padding-top:10px}
+.backup-title{font-size:.82rem;font-weight:800;color:#0f766e;margin:0 0 4px}
+.backup-note{font-size:.72rem;color:#64748b;line-height:1.4;margin:0 0 8px}
+.backup-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.transfer-qr-wrap{display:none;text-align:center;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;padding:10px;margin:8px 0}
+.transfer-qr-wrap.show{display:block}
+#transferQr{display:inline-flex;padding:6px;background:#fff;border-radius:8px}
+.transfer-warn{font-size:.7rem;color:#b91c1c;font-weight:700;margin-top:6px;line-height:1.35}
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="qrSection" class="qr-section">
+    <img class="ca-logo" src="https://assets.pgo.gamesite.nianticlabs.com/media/pgo/images/pgo-community-ambassador-logo.png" alt="Community Ambassador Logo">
+    <div class="store-title">『Pokémon GO』公式Web Store</div>
+    <div class="store-subtitle">🎁コードの引き換え🎁</div>
+    <div class="qr-box-wrap">
+      <div id="qrcode"><div class="placeholder-text">下のカメラでカードを読み取るか<br>コードを貼り付けてください</div></div>
+      <div id="usedOverlay" class="used-overlay"><div id="usedStamp" class="used-stamp">使用済み</div></div>
+    </div>
+  </div>
 
+  <div class="mode-bar">
+    <button type="button" class="mode-btn" id="modeDist" onclick="switchMode('dist')">📋配布</button>
+    <button type="button" class="mode-btn active" id="modePaste" onclick="switchMode('paste')">📷即時</button>
+    <button type="button" class="mode-btn" id="modeNg" onclick="switchMode('ng')">🍀NG(<span id="ngTabCount">0</span>)</button>
+    <button type="button" class="mode-btn" id="modeReg" onclick="switchMode('reg')">📥登録</button>
+    <button type="button" class="icon-btn" id="soundBtn" onclick="toggleSound()" title="効果音オン/オフ">🔊</button>
+    <button type="button" class="icon-btn" onclick="loadAppState()" title="最新データ取得">🔄</button>
+    <button type="button" class="icon-btn" id="settingsBtn" onclick="openSettingsModal()" title="接続設定">⚙️</button>
+  </div>
+
+  <div id="panelDist" class="panel">
+    <div id="lotGrid" class="lot-grid"></div>
+    <div class="meta-row">
+      <span id="distMeta">残り - / 全 - 件</span>
+      <span id="distToast" class="toast-msg"></span>
+    </div>
+    <div class="wheel-wrapper">
+      <div class="wheel-highlight"></div>
+      <div class="wheel-fade-top"></div>
+      <div class="wheel-fade-bottom"></div>
+      <div id="distWheel" class="wheel-scroll"><div class="wheel-empty">接続設定を確認中...</div></div>
+    </div>
+    <div class="sliders-stack">
+      <div id="distDoneTrack" class="slide-track disabled">
+        <div id="distDoneFill" class="slide-fill"></div>
+        <div id="distDoneLabel" class="slide-label">スライドで使用済みにする ▶▶</div>
+        <div id="distDoneThumb" class="slide-thumb">≫</div>
+      </div>
+      <div id="distNgTrack" class="slide-track type-ng disabled">
+        <div id="distNgFill" class="slide-fill"></div>
+        <div id="distNgLabel" class="slide-label">ダメだったらスライド（NG1へ） ▶▶</div>
+        <div id="distNgThumb" class="slide-thumb">NG</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="panelPaste" class="panel active">
+    <div class="instant-cam-row">
+      <button type="button" class="action-btn btn-blue" onclick="document.getElementById('instantCamInput').click()">📷 カメラで即読</button>
+      <button type="button" class="action-btn btn-teal" onclick="startInstantCamera(false)">🎥 画面内カメラ</button>
+    </div>
+    <input type="file" id="instantCamInput" accept="image/*" capture="environment" style="display:none" onchange="handleInstantFileSelect(this)">
+
+    <div id="instantCamWrap" class="live-cam-wrap">
+      <div class="cam-stage">
+        <video id="instantVideo" class="live-video compact" autoplay playsinline muted></video>
+        <div class="cam-guide narrow"></div>
+        <div id="instantFlash" class="cam-flash"></div>
+      </div>
+      <div class="cam-controls">
+        <button type="button" id="instantCaptureBtn" class="action-btn btn-green" style="flex:2;" onclick="captureInstantCamera()">📸 パシャッと即QR表示</button>
+        <button type="button" class="action-btn btn-gray" style="flex:1;" onclick="stopInstantCamera()">閉じる</button>
+      </div>
+    </div>
+
+    <div id="instantOcrStatus" class="ocr-status one-line"></div>
+    <div id="instantCandidates" class="instant-chips"></div>
+
+    <div class="form-group">
+      <label class="paste-label" for="scannedText">読み取りコード（直接貼り付け・修正もOK）</label>
+      <textarea id="scannedText" class="paste-area" placeholder="カメラで撮るか、ここに長押しペースト" inputmode="none" oninput="onPasteInput()"></textarea>
+    </div>
+    <div class="button-row">
+      <button type="button" class="sub-button" id="keyboardToggleBtn" onclick="toggleKeyboard()">キーボード許可</button>
+      <button type="button" class="sub-button" id="clearBtn" onclick="clearText()">クリア</button>
+    </div>
+  </div>
+
+  <div id="panelNg" class="panel">
+    <div class="filter-row">
+      <button type="button" class="filter-btn active" id="ngFilterActive" onclick="setNgFilter('active')">未解決 (NG1〜3)</button>
+      <button type="button" class="filter-btn" id="ngFilterNg3" onclick="setNgFilter('ng3')">NG3のみ</button>
+      <button type="button" class="filter-btn" id="ngFilterAll" onclick="setNgFilter('all')">すべて</button>
+    </div>
+    <div class="meta-row">
+      <span id="ngMeta">表示 - 件</span>
+      <span id="ngToast" class="toast-msg"></span>
+    </div>
+    <div class="wheel-wrapper">
+      <div class="wheel-highlight"></div>
+      <div class="wheel-fade-top"></div>
+      <div class="wheel-fade-bottom"></div>
+      <div id="ngWheel" class="wheel-scroll"><div class="wheel-empty">NGコードはありません</div></div>
+    </div>
+    <div class="sliders-stack">
+      <div id="ngDoneTrack" class="slide-track disabled">
+        <div id="ngDoneFill" class="slide-fill"></div>
+        <div id="ngDoneLabel" class="slide-label">当たったらスライドで使用済み ▶▶</div>
+        <div id="ngDoneThumb" class="slide-thumb">≫</div>
+      </div>
+      <div id="ngStepTrack" class="slide-track type-ng disabled">
+        <div id="ngStepFill" class="slide-fill"></div>
+        <div id="ngStepLabel" class="slide-label">ダメだったらNG回数アップ ▶▶</div>
+        <div id="ngStepThumb" class="slide-thumb">NG</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="panelReg" class="panel">
+    <div class="reg-box">
+      <div class="reg-title">① 登録先のタブ（50枚1単位）</div>
+      <div class="reg-radio-row">
+        <label class="reg-radio-label"><input type="radio" name="regMode" value="new" checked onchange="toggleRegMode()"> 新しいタブ作成</label>
+        <label class="reg-radio-label"><input type="radio" name="regMode" value="append" onchange="toggleRegMode()"> 既存タブに追記</label>
+      </div>
+      <div id="regNewWrap"><input type="text" id="newTabName" class="reg-input" placeholder="短いタブ名（例：A2、12月A など）"></div>
+      <div id="regAppendWrap" style="display:none;"><select id="appendTabSelect" class="reg-select"></select></div>
+    </div>
+
+    <div class="reg-box">
+      <div class="reg-title">② カードを読み取る</div>
+      <div class="reg-subdesc">5〜10枚を階段状に並べて撮影が最速です！<br>おすすめ：ピント重視は<b>「📷標準カメラ」</b>／連続は<b>「🎥画面内カメラ」</b></div>
+      <div class="reg-btn-grid">
+        <button type="button" class="action-btn btn-blue" onclick="document.getElementById('camFileInput').click()">📷 標準カメラで撮る</button>
+        <button type="button" class="action-btn btn-indigo" onclick="document.getElementById('galleryFileInput').click()">🖼️ 写真から選ぶ</button>
+        <button type="button" class="action-btn btn-teal" onclick="startLiveCamera(false)" style="grid-column:span 2;">🎥 画面内カメラで連続撮影</button>
+      </div>
+      <input type="file" id="camFileInput" accept="image/*" capture="environment" style="display:none" onchange="handleFileSelect(this)">
+      <input type="file" id="galleryFileInput" accept="image/*" multiple style="display:none" onchange="handleFileSelect(this)">
+
+      <div id="liveCamWrap" class="live-cam-wrap">
+        <div class="cam-stage">
+          <video id="liveVideo" class="live-video" autoplay playsinline muted></video>
+          <div class="cam-guide"></div>
+          <div id="liveFlash" class="cam-flash"></div>
+        </div>
+        <div class="cam-controls">
+          <button type="button" id="liveCaptureBtn" class="action-btn btn-green" style="flex:2;" onclick="captureLiveCamera()">📸 パシャッと読み取る</button>
+          <button type="button" class="action-btn btn-gray" style="flex:1;" onclick="stopLiveCamera()">閉じる</button>
+        </div>
+      </div>
+
+      <div id="ocrStatus" class="ocr-status"></div>
+      <details>
+        <summary style="font-size:.78rem;font-weight:800;color:#475569;cursor:pointer;margin-bottom:6px;">📋 テキスト貼り付けから一括抽出する</summary>
+        <textarea id="bulkPasteText" class="bulk-textarea" placeholder="Google Lensやメモ帳からコピーした文字をそのまま貼り付け（余計な文字は自動カット）"></textarea>
+        <button type="button" class="action-btn btn-gray btn-full" onclick="extractFromBulkText()">テキストから13桁コードを抽出</button>
+      </details>
+    </div>
+
+    <div class="reg-box">
+      <div class="meta-row" style="margin-bottom:2px;">
+        <span style="font-size:.84rem;color:#0f172a;">③ 読み取り済み：<strong id="regCountLabel">0 / 50 枚</strong></span>
+        <button type="button" style="border:none;background:none;color:#dc2626;font-size:.75rem;font-weight:800;cursor:pointer;" onclick="clearRegList()">リストを全消去</button>
+      </div>
+      <div class="progress-bar-wrap"><div id="regProgressFill" class="progress-bar-fill"></div></div>
+      <div id="regList" class="reg-list">
+        <div style="text-align:center;font-size:.78rem;color:#64748b;padding:16px 0;">まだコードがありません。<br>上のカメラボタンから撮影してください。</div>
+      </div>
+      <button type="button" id="saveRegBtn" class="action-btn btn-green btn-full" onclick="submitRegistration()">💾 スプレッドシートへまとめて登録</button>
+    </div>
+  </div>
+</div>
+
+<div id="settingsModal" class="modal-backdrop">
+  <div class="modal-card">
+    <h2 class="modal-title">⚙️ スプレッドシート接続設定 <span style="font-size:.72rem;color:#64748b;font-weight:700;">v2.1</span></h2>
+    <p class="modal-desc">ご自身のGASウェブアプリURLと、<code>コード.gs</code>に設定した合言葉を入力してください。</p>
+    <label class="field-label" for="inputApiUrl">GAS ウェブアプリURL（.../exec）</label>
+    <input type="url" id="inputApiUrl" class="modal-input" placeholder="https://script.google.com/macros/s/.../exec">
+    <label class="field-label" for="inputApiPass">合言葉（APP_PASSWORD）</label>
+    <div class="pass-wrap">
+      <input type="password" id="inputApiPass" class="modal-input" placeholder="コード.gsに設定した合言葉">
+      <button type="button" class="pass-toggle" onclick="togglePassVisibility()">表示</button>
+    </div>
+    <div id="settingsMsg" class="modal-msg"></div>
+    <div class="modal-actions">
+      <button type="button" id="saveSettingsBtn" class="action-btn btn-blue" style="flex:2;" onclick="saveAndTestSettings()">接続テストして保存</button>
+      <button type="button" class="action-btn btn-gray" style="flex:1;" onclick="closeSettingsModal()">閉じる</button>
+    </div>
+
+    <div id="backupBox" class="backup-box" style="display:none;">
+      <div class="backup-title">📌 キャッシュ消去対策・別端末へ引き継ぎ</div>
+      <p class="backup-note">「復元用URLをセット」を押した状態で<b>ホーム画面に追加</b>しておくと、キャッシュが消えてもアイコンから開くだけで自動復活します。</p>
+      <div class="backup-grid">
+        <button type="button" class="action-btn btn-teal" onclick="applyRestoreUrlToBar()">📌 復元用URLをセット</button>
+        <button type="button" class="action-btn btn-indigo" onclick="copyRestoreUrl()">📋 URLをコピー</button>
+        <button type="button" class="action-btn btn-green" style="grid-column:span 2;" onclick="toggleTransferQr()">📱 別端末へ引き継ぎQRを表示</button>
+      </div>
+      <div id="transferQrWrap" class="transfer-qr-wrap">
+        <div id="transferQr"></div>
+        <div class="transfer-warn">※新しいスマホのカメラで読み取るだけで設定完了します。<br>合言葉も含まれるため、他人には見せないでください。</div>
+      </div>
+    </div>
+
+    <button type="button" style="width:100%;border:none;background:none;color:#94a3b8;font-size:.74rem;font-weight:700;cursor:pointer;padding:6px 4px 2px;" onclick="clearSavedSettings()">このスマホから接続情報を削除</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY_URL='l2s_pro_gas_url';
+const STORAGE_KEY_PASS='l2s_pro_gas_pass';
+const STORAGE_KEY_SOUND='l2s_pro_sound_on';
+const BASE_URL="https://store.pokemongo.com/ja/offer-redemption?passcode=";
+const ITEM_HEIGHT=38;
+
+let currentMode='paste';
+let appState={lots:[],allVisibleLotNames:[],ngItems:[],existingCodeMap:{}};
+let activeLotIdx=0,distSelectedIdx=0;
+let ngFilter='active',filteredNgItems=[],ngSelectedIdx=0;
+let stagedCodes=[],liveStream=null,instantStream=null;
+let isSaving=false,isOcrBusy=false,toastTimers={};
+let soundEnabled=localStorage.getItem(STORAGE_KEY_SOUND)!=='0';
+let audioCtx=null;
+let restoreNoticePending=false;
+
+window.addEventListener('DOMContentLoaded',()=>{
+  updateSoundBtn();
+  initWheel('distWheel',onDistWheelChange);
+  initWheel('ngWheel',onNgWheelChange);
+  bindSlider('distDoneTrack','distDoneThumb','distDoneFill',onDistDoneSlide);
+  bindSlider('distNgTrack','distNgThumb','distNgFill',onDistNgSlide);
+  bindSlider('ngDoneTrack','ngDoneThumb','ngDoneFill',onNgDoneSlide);
+  bindSlider('ngStepTrack','ngStepThumb','ngStepFill',onNgStepSlide);
+  renderPasteQR();
+
+  const restored=restoreConfigFromHash();
+  const {url,pass}=getSavedConfig();
+  if(!url||!pass){
+    markNeedsSetup(true);
+    document.getElementById('distWheel').innerHTML='<div class="wheel-empty">右上の ⚙️ から<br>GASのURLと合言葉を設定してください</div>';
+    openSettingsModal();
+    return;
+  }
+  if(restored){
+    restoreNoticePending=true;
+    setInstantStatus('✓ 設定を自動復元しました');
+  }
+  loadAppState();
+  startInstantCamera(true);
+});
+
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden)return;
+  if(currentMode==='paste'&&document.getElementById('instantCamWrap').classList.contains('show')){
+    ensureStreamAlive(instantStream,document.getElementById('instantVideo'),()=>startInstantCamera(true));
+  }else if(currentMode==='reg'&&document.getElementById('liveCamWrap').classList.contains('show')){
+    ensureStreamAlive(liveStream,document.getElementById('liveVideo'),()=>startLiveCamera(true));
+  }
+});
+function ensureStreamAlive(stream,videoEl,restartFn){
+  const tracks=stream?stream.getVideoTracks():[];
+  const alive=tracks.length>0&&tracks.some(t=>t.readyState==='live');
+  if(!alive){restartFn();return;}
+  if(videoEl&&videoEl.paused){videoEl.play().catch(()=>restartFn());}
+}
+
+function encodeRestoreToken(url,pass){
+  const bytes=new TextEncoder().encode(JSON.stringify({u:url,p:pass}));
+  let bin='';
+  for(let i=0;i<bytes.length;i++)bin+=String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function decodeRestoreToken(token){
+  try{
+    let b64=token.replace(/-/g,'+').replace(/_/g,'/');
+    while(b64.length%4)b64+='=';
+    const bin=atob(b64);
+    const bytes=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    const obj=JSON.parse(new TextDecoder().decode(bytes));
+    if(obj&&typeof obj.u==='string'&&typeof obj.p==='string'&&obj.u.indexOf('https://script.google.com/')===0&&obj.p){
+      return{url:obj.u.trim(),pass:obj.p.trim()};
+    }
+  }catch(e){}
+  return null;
+}
+function restoreConfigFromHash(){
+  const hash=window.location.hash||'';
+  const m=hash.match(/cfg=([A-Za-z0-9\-_]+)/);
+  if(!m)return false;
+  const parsed=decodeRestoreToken(m[1]);
+  if(!parsed)return false;
+  const prev=getSavedConfig();
+  const wasMissing=!prev.url||!prev.pass||prev.url!==parsed.url||prev.pass!==parsed.pass;
+  localStorage.setItem(STORAGE_KEY_URL,parsed.url);
+  localStorage.setItem(STORAGE_KEY_PASS,parsed.pass);
+  markNeedsSetup(false);
+  return wasMissing;
+}
+function buildRestoreUrl(){
+  const {url,pass}=getSavedConfig();
+  if(!url||!pass)return '';
+  return window.location.href.split('#')[0]+'#cfg='+encodeRestoreToken(url,pass);
+}
+function applyRestoreUrlToBar(){
+  const full=buildRestoreUrl();
+  if(!full){setSettingsMsg('⚠️ 先に接続テストして保存してください。',false);return;}
+  history.replaceState(null,'',full);
+  setSettingsMsg('✓ セット完了！このまま「ホーム画面に追加」かブックマークしてください。',true);
+}
+async function copyRestoreUrl(){
+  const full=buildRestoreUrl();
+  if(!full){setSettingsMsg('⚠️ 先に接続テストして保存してください。',false);return;}
+  try{
+    await navigator.clipboard.writeText(full);
+    setSettingsMsg('✓ 復元用URLをコピーしました！',true);
+  }catch(e){
+    prompt('以下のURLをコピーして控えてください（他人には見せないでください）',full);
+  }
+}
+function toggleTransferQr(){
+  const wrap=document.getElementById('transferQrWrap');
+  if(wrap.classList.contains('show')){wrap.classList.remove('show');return;}
+  const full=buildRestoreUrl();
+  if(!full){setSettingsMsg('⚠️ 先に接続テストして保存してください。',false);return;}
+  const box=document.getElementById('transferQr');
+  box.innerHTML='';
+  new QRCode(box,{text:full,width:180,height:180,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.L});
+  wrap.classList.add('show');
+}
+
+function getAudioCtx(){
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC)return null;
+  if(!audioCtx)audioCtx=new AC();
+  if(audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});
+  return audioCtx;
+}
+function updateSoundBtn(){
+  const btn=document.getElementById('soundBtn');
+  btn.textContent=soundEnabled?'🔊':'🔇';
+  btn.classList.toggle('muted',!soundEnabled);
+}
+function toggleSound(){
+  soundEnabled=!soundEnabled;
+  localStorage.setItem(STORAGE_KEY_SOUND,soundEnabled?'1':'0');
+  updateSoundBtn();
+  if(soundEnabled)playSuccessSound();
+}
+function playShutterSound(){
+  if(!soundEnabled)return;
+  const ctx=getAudioCtx();if(!ctx)return;
+  const now=ctx.currentTime,dur=0.065;
+  const buf=ctx.createBuffer(1,Math.floor(ctx.sampleRate*dur),ctx.sampleRate);
+  const ch=buf.getChannelData(0);
+  for(let i=0;i<ch.length;i++)ch[i]=(Math.random()*2-1)*Math.pow(1-i/ch.length,2.5);
+  const src=ctx.createBufferSource();src.buffer=buf;
+  const filt=ctx.createBiquadFilter();filt.type='bandpass';filt.frequency.setValueAtTime(2400,now);filt.Q.setValueAtTime(1.1,now);
+  const gain=ctx.createGain();gain.gain.setValueAtTime(0.65,now);gain.gain.exponentialRampToValueAtTime(0.01,now+dur);
+  src.connect(filt);filt.connect(gain);gain.connect(ctx.destination);src.start(now);
+  const osc=ctx.createOscillator(),og=ctx.createGain();
+  osc.type='triangle';osc.frequency.setValueAtTime(950,now+0.025);osc.frequency.exponentialRampToValueAtTime(260,now+0.065);
+  og.gain.setValueAtTime(0.28,now+0.025);og.gain.exponentialRampToValueAtTime(0.001,now+0.07);
+  osc.connect(og);og.connect(ctx.destination);osc.start(now+0.025);osc.stop(now+0.075);
+}
+function playSuccessSound(){
+  if(!soundEnabled)return;
+  const ctx=getAudioCtx();if(!ctx)return;
+  const now=ctx.currentTime;
+  [880,1318.5].forEach((freq,i)=>{
+    const osc=ctx.createOscillator(),g=ctx.createGain();
+    osc.type='sine';osc.frequency.setValueAtTime(freq,now+i*0.07);
+    g.gain.setValueAtTime(0.001,now+i*0.07);g.gain.linearRampToValueAtTime(0.2,now+i*0.07+0.01);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.07+0.14);
+    osc.connect(g);g.connect(ctx.destination);osc.start(now+i*0.07);osc.stop(now+i*0.07+0.15);
+  });
+}
+function triggerFlash(id){
+  const el=document.getElementById(id);if(!el)return;
+  el.classList.add('active');
+  requestAnimationFrame(()=>setTimeout(()=>el.classList.remove('active'),45));
+}
+
+function getSavedConfig(){
+  return{url:(localStorage.getItem(STORAGE_KEY_URL)||'').trim(),pass:(localStorage.getItem(STORAGE_KEY_PASS)||'').trim()};
+}
+function markNeedsSetup(flag){document.getElementById('settingsBtn').classList.toggle('needs-setup',!!flag);}
+function updateBackupBoxVisibility(){
+  const {url,pass}=getSavedConfig();
+  document.getElementById('backupBox').style.display=(url&&pass)?'block':'none';
+  document.getElementById('transferQrWrap').classList.remove('show');
+}
+function openSettingsModal(errMsg){
+  const {url,pass}=getSavedConfig();
+  document.getElementById('inputApiUrl').value=url;
+  document.getElementById('inputApiPass').value=pass;
+  setSettingsMsg(errMsg||'',false);
+  updateBackupBoxVisibility();
+  document.getElementById('settingsModal').classList.add('show');
+}
+function closeSettingsModal(){
+  document.getElementById('transferQrWrap').classList.remove('show');
+  document.getElementById('settingsModal').classList.remove('show');
+}
+function togglePassVisibility(){
+  const el=document.getElementById('inputApiPass'),btn=document.querySelector('.pass-toggle');
+  if(el.type==='password'){el.type='text';btn.textContent='隠す';}else{el.type='password';btn.textContent='表示';}
+}
+function setSettingsMsg(msg,isOk){
+  const el=document.getElementById('settingsMsg');
+  el.textContent=msg;el.classList.toggle('ok',!!isOk);
+}
+async function saveAndTestSettings(){
+  const url=document.getElementById('inputApiUrl').value.trim();
+  const pass=document.getElementById('inputApiPass').value.trim();
+  if(!url||url.indexOf('https://script.google.com/')!==0){setSettingsMsg('⚠️ 正しいGASのウェブアプリURLを入力してください。',false);return;}
+  if(!pass){setSettingsMsg('⚠️ 合言葉を入力してください。',false);return;}
+  const btn=document.getElementById('saveSettingsBtn');
+  btn.disabled=true;btn.textContent='⏳ 接続テスト中...';setSettingsMsg('',false);
+  try{
+    const data=await callGasApi({action:'getState'},url,pass);
+    localStorage.setItem(STORAGE_KEY_URL,url);
+    localStorage.setItem(STORAGE_KEY_PASS,pass);
+    markNeedsSetup(false);
+    updateBackupBoxVisibility();
+    history.replaceState(null,'',buildRestoreUrl());
+    setSettingsMsg('✓ 接続成功！復元用URLもセット済みです（そのままホーム画面追加OK）',true);
+    applyLoadedAppState(data,null);
+  }catch(err){setSettingsMsg('⚠️ '+err.message,false);}
+  finally{btn.disabled=false;btn.textContent='接続テストして保存';}
+}
+function clearSavedSettings(){
+  if(!confirm('このスマホに保存されている接続設定を削除しますか？'))return;
+  localStorage.removeItem(STORAGE_KEY_URL);localStorage.removeItem(STORAGE_KEY_PASS);
+  history.replaceState(null,'',window.location.href.split('#')[0]);
+  document.getElementById('inputApiUrl').value='';document.getElementById('inputApiPass').value='';
+  markNeedsSetup(true);updateBackupBoxVisibility();setSettingsMsg('接続設定を削除しました。',true);
+}
+
+async function callGasApi(payload,overrideUrl,overridePass){
+  const cfg=getSavedConfig();
+  const url=overrideUrl||cfg.url,pass=overridePass||cfg.pass;
+  if(!url||!pass)throw new Error('接続設定が未入力です。⚙️ボタンから設定してください。');
+  const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({},payload,{password:pass})),redirect:'follow'});
+  let json;
+  try{json=await res.json();}catch(e){throw new Error('GASから正常な応答がありません。デプロイ設定を確認してください。');}
+  if(!json.ok){const err=new Error(json.error||'通信エラー');err.authError=!!json.authError;throw err;}
+  return json.data;
+}
+async function loadAppState(keepLotName){
+  const {url,pass}=getSavedConfig();
+  if(!url||!pass){openSettingsModal('まずはGASのURLと合言葉を設定してください。');return;}
+  showToast('distToast','読み込み中...');showToast('ngToast','読み込み中...');
+  try{
+    const prevLotName=keepLotName||(appState.lots[activeLotIdx]?appState.lots[activeLotIdx].name:null);
+    const data=await callGasApi({action:'getState'});
+    applyLoadedAppState(data,prevLotName);
+    showToast('distToast','✓ 最新取得済',1500);showToast('ngToast','',0);
+  }catch(err){
+    document.getElementById('distWheel').innerHTML='<div class="wheel-empty">読み込み失敗：<br>'+escapeHtml(err.message)+'</div>';
+    showToast('distToast','エラー',2500);
+    if(err.authError){markNeedsSetup(true);openSettingsModal(err.message);}
+  }
+}
+function applyLoadedAppState(data,prevLotName){
+  appState=data;
+  if(prevLotName){const idx=appState.lots.findIndex(l=>l.name===prevLotName);activeLotIdx=idx>=0?idx:0;}else{activeLotIdx=0;}
+  renderLotButtons();selectLot(activeLotIdx,true);renderNgTabBadge();refreshNgListUI(true);refreshAppendTabOptions();renderRegList();
+}
+
+function switchMode(mode){
+  if(currentMode==='reg'&&mode!=='reg')stopLiveCamera();
+  if(currentMode==='paste'&&mode!=='paste')stopInstantCamera();
+  currentMode=mode;
+  ['dist','paste','ng','reg'].forEach(m=>{
+    const cap=m.charAt(0).toUpperCase()+m.slice(1);
+    document.getElementById('mode'+cap).classList.toggle('active',m===mode);
+    document.getElementById('panel'+cap).classList.toggle('active',m===mode);
+  });
+  document.getElementById('qrSection').classList.toggle('hidden-for-reg',mode==='reg');
+  if(mode==='dist')renderSelectedDistItem();
+  else if(mode==='ng')refreshNgListUI(false);
+  else if(mode==='paste')renderPasteQR();
+}
+
+function renderLotButtons(){
+  const grid=document.getElementById('lotGrid');
+  if(!appState.lots||appState.lots.length===0){
+    grid.innerHTML='<div style="grid-column:span 4;text-align:center;font-size:.76rem;color:#64748b;padding:6px;">表示中のタブがありません。「📥登録」から作成できます。</div>';
+    return;
+  }
+  grid.style.gridTemplateColumns=`repeat(${Math.min(4,appState.lots.length)},1fr)`;
+  grid.innerHTML=appState.lots.map((lot,idx)=>{
+    const activeCls=idx===activeLotIdx?' active':'';
+    const lowCls=lot.remainCount>0&&lot.remainCount<=10?' low':'';
+    return `<button type="button" class="lot-btn${activeCls}${lowCls}" onclick="selectLot(${idx},true)"><span class="lot-name">${escapeHtml(lot.name)}</span><span class="lot-rem">残 ${lot.remainCount}/${lot.totalCount}</span></button>`;
+  }).join('');
+}
+function selectLot(idx,jumpToFirstAvailable){
+  if(!appState.lots||appState.lots.length===0){
+    document.getElementById('distWheel').innerHTML='<div class="wheel-empty">タブにコードがありません</div>';
+    document.getElementById('distMeta').textContent='残り 0 / 全 0 件';
+    updateDistSliders();
+    if(currentMode==='dist')drawQR('','','「📥登録」タブから<br>コードを登録してください');
+    return;
+  }
+  activeLotIdx=Math.max(0,Math.min(appState.lots.length-1,idx));
+  renderLotButtons();
+  const lot=appState.lots[activeLotIdx],wheel=document.getElementById('distWheel');
+  if(lot.items.length===0){
+    wheel.innerHTML='<div class="wheel-empty">このタブは空です。<br>「📥登録」から追加してください</div>';
+    distSelectedIdx=0;updateDistMeta();updateDistSliders();
+    if(currentMode==='dist')drawQR('','','このタブにはコードがありません');
+    return;
+  }
+  let html='<div class="wheel-spacer"></div>';
+  lot.items.forEach((item,i)=>{
+    const st=getStatusDisplay(item.status);
+    html+=`<div class="wheel-item ${st.cls}" data-dist-idx="${i}" onclick="scrollWheelTo('distWheel',${i})"><span class="item-no">#${i+1}</span><span class="item-code">${escapeHtml(item.code)}</span><span class="status-badge">${st.label}</span></div>`;
+  });
+  html+='<div class="wheel-spacer"></div>';
+  wheel.innerHTML=html;
+  if(jumpToFirstAvailable){
+    let target=lot.items.findIndex(it=>it.status==='');
+    if(target<0)target=lot.items.findIndex(it=>it.status==='NG1'||it.status==='NG2');
+    distSelectedIdx=target>=0?target:0;
+  }else{distSelectedIdx=Math.min(distSelectedIdx,lot.items.length-1);}
+  wheel.scrollTop=distSelectedIdx*ITEM_HEIGHT;
+  updateDistMeta();
+  if(currentMode==='dist')renderSelectedDistItem();
+}
+function onDistWheelChange(idx){
+  const lot=appState.lots[activeLotIdx];
+  if(!lot||lot.items.length===0)return;
+  const clamped=Math.max(0,Math.min(lot.items.length-1,idx));
+  if(clamped!==distSelectedIdx){distSelectedIdx=clamped;if(currentMode==='dist')renderSelectedDistItem();}
+}
+function renderSelectedDistItem(){
+  const lot=appState.lots[activeLotIdx];
+  if(!lot||lot.items.length===0){drawQR('','','コードがありません');updateDistSliders();return;}
+  const item=lot.items[distSelectedIdx];
+  drawQR(item.code,item.status);updateDistSliders();
+}
+function updateDistMeta(){
+  const lot=appState.lots[activeLotIdx];if(!lot)return;
+  const remain=lot.items.filter(it=>it.status!=='済'&&it.status!=='NG3').length;
+  const ngCount=lot.items.filter(it=>it.status==='NG1'||it.status==='NG2'||it.status==='NG3').length;
+  lot.remainCount=remain;lot.totalCount=lot.items.length;
+  document.getElementById('distMeta').textContent=`[${lot.name}] 残 ${remain}/${lot.totalCount}（NG:${ngCount}）`;
+  renderLotButtons();
+}
+function updateDistSliders(){
+  const lot=appState.lots[activeLotIdx];
+  const doneTrack=document.getElementById('distDoneTrack'),doneLabel=document.getElementById('distDoneLabel'),doneThumb=document.getElementById('distDoneThumb');
+  const ngTrack=document.getElementById('distNgTrack'),ngLabel=document.getElementById('distNgLabel');
+  if(!lot||lot.items.length===0||isSaving){doneTrack.classList.add('disabled');ngTrack.classList.add('disabled');return;}
+  const item=lot.items[distSelectedIdx];
+  doneTrack.classList.remove('disabled');
+  if(item.status==='済'||item.status==='NG3'){
+    doneTrack.classList.add('mode-undo');doneLabel.textContent='スライドで未使用に復活 ↺';doneThumb.textContent='↺';
+    ngTrack.classList.add('disabled');ngLabel.textContent=item.status==='NG3'?'3回NG済み（上のスライダーで復活可）':'使用済み';
+  }else{
+    doneTrack.classList.remove('mode-undo');doneLabel.textContent='スライドで使用済みにする ▶▶';doneThumb.textContent='≫';
+    ngTrack.classList.remove('disabled');
+    const nextNg=item.status===''?'NG1':(item.status==='NG1'?'NG2':'NG3(破棄)');
+    ngLabel.textContent=`ダメだったらスライド → ${nextNg} ▶▶`;
+  }
+}
+async function onDistDoneSlide(){
+  const lot=appState.lots[activeLotIdx];
+  if(!lot||!lot.items[distSelectedIdx]||isSaving)return;
+  const item=lot.items[distSelectedIdx];
+  await applyDistStatusChange(lot,distSelectedIdx,(item.status==='済'||item.status==='NG3')?'':'済');
+}
+async function onDistNgSlide(){
+  const lot=appState.lots[activeLotIdx];
+  if(!lot||!lot.items[distSelectedIdx]||isSaving)return;
+  const item=lot.items[distSelectedIdx];
+  if(item.status==='済'||item.status==='NG3')return;
+  await applyDistStatusChange(lot,distSelectedIdx,item.status===''?'NG1':(item.status==='NG1'?'NG2':'NG3'));
+}
+async function applyDistStatusChange(lot,itemIdx,nextStatus){
+  const item=lot.items[itemIdx],prevStatus=item.status;
+  isSaving=true;item.status=nextStatus;
+  updateWheelRowUI('distWheel','data-dist-idx',itemIdx,nextStatus);
+  updateDistMeta();renderSelectedDistItem();showToast('distToast','保存中...');
+  try{
+    const res=await callGasApi({action:'updateStatus',sheetName:lot.name,row:item.row,code:item.code,status:nextStatus});
+    item.status=res.status;item.updatedAt=res.updatedAt;
+    if(res.ngItems){appState.ngItems=res.ngItems;renderNgTabBadge();}
+    isSaving=false;updateDistSliders();
+    showToast('distToast',nextStatus===''?'✓ 未使用に復活':`✓ ${nextStatus} にしました`,2000);
+  }catch(err){
+    isSaving=false;item.status=prevStatus;
+    updateWheelRowUI('distWheel','data-dist-idx',itemIdx,prevStatus);
+    updateDistMeta();renderSelectedDistItem();showToast('distToast','',0);
+    alert('保存に失敗しました：'+err.message);
+  }
+}
+
+function renderNgTabBadge(){document.getElementById('ngTabCount').textContent=(appState.ngItems||[]).filter(i=>i.status!=='済').length;}
+function setNgFilter(filter){
+  ngFilter=filter;
+  document.getElementById('ngFilterActive').classList.toggle('active',filter==='active');
+  document.getElementById('ngFilterNg3').classList.toggle('active',filter==='ng3');
+  document.getElementById('ngFilterAll').classList.toggle('active',filter==='all');
+  refreshNgListUI(true);
+}
+function refreshNgListUI(resetPos){
+  const all=appState.ngItems||[];
+  filteredNgItems=ngFilter==='active'?all.filter(it=>it.status!=='済'):(ngFilter==='ng3'?all.filter(it=>it.status==='NG3'):all.slice());
+  document.getElementById('ngMeta').textContent=`表示 ${filteredNgItems.length} 件 / 全NG履歴 ${all.length} 件`;
+  const wheel=document.getElementById('ngWheel');
+  if(filteredNgItems.length===0){
+    wheel.innerHTML='<div class="wheel-empty">該当するNGコードはありません</div>';ngSelectedIdx=0;
+    if(currentMode==='ng'){drawQR('','','NGコードはありません');updateNgSliders();}
+    return;
+  }
+  let html='<div class="wheel-spacer"></div>';
+  filteredNgItems.forEach((item,i)=>{
+    const st=getStatusDisplay(item.status);
+    html+=`<div class="wheel-item ${st.cls}" data-ng-idx="${i}" onclick="scrollWheelTo('ngWheel',${i})"><span class="item-origin" title="${escapeHtml(item.originTab)}">${escapeHtml(item.originTab||'-')}</span><span class="item-code">${escapeHtml(item.code)}</span><span class="status-badge">${st.label}</span></div>`;
+  });
+  html+='<div class="wheel-spacer"></div>';
+  wheel.innerHTML=html;
+  ngSelectedIdx=resetPos?0:Math.min(ngSelectedIdx,filteredNgItems.length-1);
+  wheel.scrollTop=ngSelectedIdx*ITEM_HEIGHT;
+  if(currentMode==='ng')renderSelectedNgItem();
+}
+function onNgWheelChange(idx){
+  if(filteredNgItems.length===0)return;
+  const clamped=Math.max(0,Math.min(filteredNgItems.length-1,idx));
+  if(clamped!==ngSelectedIdx){ngSelectedIdx=clamped;if(currentMode==='ng')renderSelectedNgItem();}
+}
+function renderSelectedNgItem(){
+  if(filteredNgItems.length===0){drawQR('','','NGコードはありません');updateNgSliders();return;}
+  const item=filteredNgItems[ngSelectedIdx];
+  drawQR(item.code,item.status==='済'?'済':'');updateNgSliders();
+}
+function updateNgSliders(){
+  const doneTrack=document.getElementById('ngDoneTrack'),doneLabel=document.getElementById('ngDoneLabel'),doneThumb=document.getElementById('ngDoneThumb');
+  const stepTrack=document.getElementById('ngStepTrack'),stepLabel=document.getElementById('ngStepLabel');
+  if(filteredNgItems.length===0||isSaving){doneTrack.classList.add('disabled');stepTrack.classList.add('disabled');return;}
+  const item=filteredNgItems[ngSelectedIdx];
+  doneTrack.classList.remove('disabled');
+  if(item.status==='済'){
+    doneTrack.classList.add('mode-undo');doneLabel.textContent='スライドで NG1 に戻す ↺';doneThumb.textContent='↺';
+    stepTrack.classList.add('disabled');stepLabel.textContent='引き換え成功済み';
+  }else{
+    doneTrack.classList.remove('mode-undo');doneLabel.textContent='当たったらスライドで使用済み ▶▶';doneThumb.textContent='≫';
+    if(item.status==='NG3'){stepTrack.classList.add('disabled');stepLabel.textContent='NG3到達済み（何度でも試し読みOK）';}
+    else{stepTrack.classList.remove('disabled');stepLabel.textContent=`ダメだったらスライド → ${item.status==='NG1'?'NG2':'NG3'} ▶▶`;}
+  }
+}
+async function onNgDoneSlide(){
+  if(!filteredNgItems[ngSelectedIdx]||isSaving)return;
+  const item=filteredNgItems[ngSelectedIdx];
+  await applyNgStatusChange(item,item.status==='済'?'NG1':'済');
+}
+async function onNgStepSlide(){
+  if(!filteredNgItems[ngSelectedIdx]||isSaving)return;
+  const item=filteredNgItems[ngSelectedIdx];
+  if(item.status==='済'||item.status==='NG3')return;
+  await applyNgStatusChange(item,item.status==='NG1'?'NG2':'NG3');
+}
+async function applyNgStatusChange(item,nextStatus){
+  isSaving=true;showToast('ngToast','保存中...');updateNgSliders();
+  try{
+    const res=await callGasApi({action:'updateNgStatus',row:item.row,code:item.code,originTab:item.originTab,status:nextStatus});
+    if(res.appState){
+      const prevLotName=appState.lots[activeLotIdx]?appState.lots[activeLotIdx].name:null;
+      applyLoadedAppState(res.appState,prevLotName);
+    }
+    isSaving=false;
+    showToast('ngToast',nextStatus==='済'?'🎉 引き換え済みに更新！':`✓ ${nextStatus} に更新`,2200);
+  }catch(err){isSaving=false;updateNgSliders();showToast('ngToast','',0);alert('更新に失敗しました：'+err.message);}
+}
+
+function toggleRegMode(){
+  const mode=document.querySelector('input[name="regMode"]:checked').value;
+  document.getElementById('regNewWrap').style.display=mode==='new'?'block':'none';
+  document.getElementById('regAppendWrap').style.display=mode==='append'?'block':'none';
+}
+function refreshAppendTabOptions(){
+  const sel=document.getElementById('appendTabSelect'),names=appState.allVisibleLotNames||[];
+  sel.innerHTML=names.length===0?'<option value="">既存タブがありません</option>':names.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+}
+async function handleFileSelect(input){
+  const files=Array.from(input.files||[]);input.value='';if(files.length===0)return;
+  for(let i=0;i<files.length;i++){
+    setOcrStatus(`⏳ OCR解析中... (${i+1}/${files.length}枚目)`);
+    try{const dataUrl=await resizeImageFile(files[i],1600,0.85);await sendImageToOcr(dataUrl);}
+    catch(err){setOcrStatus('⚠️ 読み取りエラー：'+err.message);}
+  }
+}
+async function startLiveCamera(isAuto){
+  if(!isAuto)getAudioCtx();
+  const wrap=document.getElementById('liveCamWrap'),video=document.getElementById('liveVideo');
+  try{
+    stopInstantCamera();stopLiveCamera();
+    liveStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});
+    video.muted=true;
+    video.srcObject=liveStream;
+    wrap.classList.add('show');
+    await video.play().catch(()=>{});
+    setOcrStatus('📸 枠内にカードを並べて「パシャッと読み取る」を押してください');
+  }catch(err){
+    if(!isAuto)alert('画面内カメラを起動できませんでした。「📷 標準カメラで撮る」をお使いください。\n('+err.message+')');
+  }
+}
+function stopLiveCamera(){
+  if(liveStream){liveStream.getTracks().forEach(t=>t.stop());liveStream=null;}
+  const video=document.getElementById('liveVideo');if(video)video.srcObject=null;
+  document.getElementById('liveCamWrap').classList.remove('show');
+  const st=document.getElementById('ocrStatus');
+  if(st&&st.textContent.startsWith('📸'))st.textContent='';
+}
+async function captureLiveCamera(){
+  if(isOcrBusy)return;
+  const video=document.getElementById('liveVideo');if(!video.videoWidth)return;
+  const btn=document.getElementById('liveCaptureBtn');
+  isOcrBusy=true;btn.disabled=true;
+  playShutterSound();triggerFlash('liveFlash');
+  const dataUrl=captureVideoFrame(video,1600,0.85);
+  setOcrStatus('⏳ Google OCRで読み取り中...');
+  try{await sendImageToOcr(dataUrl);}
+  catch(err){setOcrStatus('⚠️ 読み取りエラー：'+err.message);}
+  finally{isOcrBusy=false;btn.disabled=false;}
+}
+function captureVideoFrame(video,maxSide,quality){
+  const canvas=document.createElement('canvas');
+  const scale=Math.min(1,maxSide/Math.max(video.videoWidth,video.videoHeight));
+  canvas.width=Math.round(video.videoWidth*scale);canvas.height=Math.round(video.videoHeight*scale);
+  canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+  return canvas.toDataURL('image/jpeg',quality);
+}
+function captureVisibleVideoFrame(video,maxSide,quality){
+  const vw=video.videoWidth,vh=video.videoHeight;
+  const rect=video.getBoundingClientRect();
+  if(!rect.width||!rect.height)return captureVideoFrame(video,maxSide,quality);
+  const videoAspect=vw/vh,boxAspect=rect.width/rect.height;
+  let sx=0,sy=0,sw=vw,sh=vh;
+  if(boxAspect>videoAspect){
+    const visH=vw/boxAspect;
+    sh=Math.min(vh,visH*1.35);
+    sy=Math.max(0,(vh-sh)/2);
+  }else{
+    const visW=vh*boxAspect;
+    sw=Math.min(vw,visW*1.2);
+    sx=Math.max(0,(vw-sw)/2);
+  }
+  const scale=Math.min(1,maxSide/Math.max(sw,sh));
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.max(1,Math.round(sw*scale));
+  canvas.height=Math.max(1,Math.round(sh*scale));
+  canvas.getContext('2d').drawImage(video,sx,sy,sw,sh,0,0,canvas.width,canvas.height);
+  return canvas.toDataURL('image/jpeg',quality);
+}
+function resizeImageFile(file,maxSide,quality){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const scale=Math.min(1,maxSide/Math.max(img.width,img.height));
+        const canvas=document.createElement('canvas');
+        canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);
+        canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.onerror=()=>reject(new Error('画像の読み込みに失敗しました'));
+      img.src=e.target.result;
+    };
+    reader.onerror=()=>reject(new Error('ファイルの読み込みに失敗しました'));
+    reader.readAsDataURL(file);
+  });
+}
+async function sendImageToOcr(dataUrl){
+  const res=await callGasApi({action:'ocrImage',imageBase64:dataUrl,mimeType:'image/jpeg'});
+  const found=res.codes||[];
+  if(found.length===0){setOcrStatus('⚠️ 13桁コードが見つかりませんでした。ピントを合わせて撮り直してみてください。');return;}
+  playSuccessSound();
+  const {added,skipped}=addStagedCodes(found);
+  setOcrStatus(`✓ ${found.length}件検出 → 新規追加 ${added}件`+(skipped>0?`（リスト内重複 ${skipped}件スキップ）`:''));
+}
+function extractFromBulkText(){
+  const text=document.getElementById('bulkPasteText').value||'';
+  const valid=(text.toUpperCase().match(/\b[A-Z0-9]{13}\b/g)||[]).filter(t=>/[A-Z]/.test(t)&&/[0-9]/.test(t));
+  if(valid.length===0){setOcrStatus('⚠️ テキスト内に13桁の英数字コードが見つかりませんでした。');return;}
+  playSuccessSound();
+  const {added,skipped}=addStagedCodes(valid);
+  document.getElementById('bulkPasteText').value='';
+  setOcrStatus(`✓ テキストから ${added}件追加`+(skipped>0?`（重複 ${skipped}件スキップ）`:''));
+}
+function addStagedCodes(codes){
+  let added=0,skipped=0;const set=new Set(stagedCodes);
+  codes.forEach(c=>{const norm=String(c||'').trim().toUpperCase();if(!norm)return;if(set.has(norm))skipped++;else{set.add(norm);stagedCodes.push(norm);added++;}});
+  renderRegList();return{added,skipped};
+}
+function renderRegList(){
+  const listEl=document.getElementById('regList'),count=stagedCodes.length;
+  document.getElementById('regCountLabel').textContent=`${count} / 50 枚`;
+  const fill=document.getElementById('regProgressFill');
+  fill.style.width=Math.min(100,Math.round((count/50)*100))+'%';
+  fill.classList.toggle('complete',count===50);
+  if(count===0){listEl.innerHTML='<div style="text-align:center;font-size:.78rem;color:#64748b;padding:16px 0;">まだコードがありません。<br>上のカメラボタンから撮影してください。</div>';return;}
+  const sheetMap=appState.existingCodeMap||{};
+  listEl.innerHTML=stagedCodes.map((code,idx)=>{
+    const dupTab=sheetMap[code],dupCls=dupTab?' dup':'',dupTag=dupTab?`<span class="reg-dup-tag">⚠️${escapeHtml(dupTab)}と重複</span>`:'';
+    return `<div class="reg-item${dupCls}"><span class="reg-item-no">${idx+1}.</span><input type="text" class="reg-item-input" value="${escapeHtml(code)}" onchange="editStagedCode(${idx},this.value)">${dupTag}<button type="button" class="reg-del-btn" onclick="deleteStagedCode(${idx})">✕</button></div>`;
+  }).join('');
+}
+function editStagedCode(idx,val){stagedCodes[idx]=String(val||'').trim().toUpperCase();renderRegList();}
+function deleteStagedCode(idx){stagedCodes.splice(idx,1);renderRegList();}
+function clearRegList(){if(stagedCodes.length===0)return;if(!confirm('読み取り済みリストをすべて消去しますか？'))return;stagedCodes=[];setOcrStatus('');renderRegList();}
+async function submitRegistration(){
+  if(stagedCodes.length===0){alert('登録するコードがありません。');return;}
+  const mode=document.querySelector('input[name="regMode"]:checked').value;
+  const sheetName=mode==='new'?document.getElementById('newTabName').value.trim():document.getElementById('appendTabSelect').value;
+  if(!sheetName){alert(mode==='new'?'新しいタブ名を入力してください。':'追記先のタブを選んでください。');return;}
+  const btn=document.getElementById('saveRegBtn');btn.disabled=true;btn.textContent='⏳ シートへ保存中...';
+  try{
+    const res=await callGasApi({action:'registerCodes',mode,sheetName,codes:stagedCodes});
+    stagedCodes=[];document.getElementById('newTabName').value='';stopLiveCamera();
+    if(res.appState)applyLoadedAppState(res.appState,res.sheetName);
+    playSuccessSound();
+    setOcrStatus(`🎉 タブ「${res.sheetName}」に ${res.addedCount}件を登録しました！`);
+    alert(`タブ「${res.sheetName}」へ ${res.addedCount} 件の登録が完了しました！`);
+  }catch(err){alert('登録に失敗しました：'+err.message);}
+  finally{btn.disabled=false;btn.textContent='💾 スプレッドシートへまとめて登録';}
+}
+function setOcrStatus(msg){document.getElementById('ocrStatus').textContent=msg;}
+
+function setInstantStatus(msg){document.getElementById('instantOcrStatus').textContent=msg;}
+async function handleInstantFileSelect(input){
+  const file=input.files&&input.files[0];input.value='';if(!file||isOcrBusy)return;
+  isOcrBusy=true;
+  setInstantStatus('⏳ カードを読み取り中...');
+  try{const dataUrl=await resizeImageFile(file,1600,0.85);await runInstantOcr(dataUrl);}
+  catch(err){setInstantStatus('⚠️ '+err.message);}
+  finally{isOcrBusy=false;}
+}
+async function startInstantCamera(isAuto){
+  if(!isAuto)getAudioCtx();
+  const wrap=document.getElementById('instantCamWrap'),video=document.getElementById('instantVideo');
+  try{
+    stopLiveCamera();stopInstantCamera();
+    instantStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});
+    video.muted=true;
+    video.srcObject=instantStream;
+    wrap.classList.add('show');
+    await video.play().catch(()=>{});
+    if(restoreNoticePending){
+      restoreNoticePending=false;
+      setInstantStatus('✓ 設定を自動復元しました（撮影OK）');
+    }else{
+      setInstantStatus('📸 枠に合わせて「パシャッと即QR表示」');
+    }
+  }catch(err){
+    if(isAuto){
+      if(restoreNoticePending){
+        restoreNoticePending=false;
+        setInstantStatus('✓ 設定復元済（🎥ボタンでカメラ起動）');
+      }else{
+        setInstantStatus('📸 「🎥 画面内カメラ」で起動します');
+      }
+    }else{
+      alert('画面内カメラを起動できませんでした。「📷 カメラで即読」をお使いください。\n('+err.message+')');
+    }
+  }
+}
+function stopInstantCamera(){
+  if(instantStream){instantStream.getTracks().forEach(t=>t.stop());instantStream=null;}
+  const video=document.getElementById('instantVideo');if(video)video.srcObject=null;
+  document.getElementById('instantCamWrap').classList.remove('show');
+  const st=document.getElementById('instantOcrStatus');
+  if(st&&st.textContent.startsWith('📸'))st.textContent='';
+}
+async function captureInstantCamera(){
+  if(isOcrBusy)return;
+  const video=document.getElementById('instantVideo');if(!video.videoWidth)return;
+  const btn=document.getElementById('instantCaptureBtn');
+  isOcrBusy=true;btn.disabled=true;
+  playShutterSound();triggerFlash('instantFlash');
+  const dataUrl=captureVisibleVideoFrame(video,1600,0.85);
+  setInstantStatus('⏳ コードを読み取り中...');
+  try{const ok=await runInstantOcr(dataUrl);if(ok)stopInstantCamera();}
+  catch(err){setInstantStatus('⚠️ '+err.message);}
+  finally{isOcrBusy=false;btn.disabled=false;}
+}
+async function runInstantOcr(dataUrl){
+  const res=await callGasApi({action:'ocrImage',imageBase64:dataUrl,mimeType:'image/jpeg'});
+  const found=res.codes||[];
+  if(found.length===0){setInstantStatus('⚠️ 未検出：ピントを合わせて撮り直してください');return false;}
+  playSuccessSound();
+  applyInstantCode(found[0]);
+  renderInstantCandidates(found,found[0]);
+  setInstantStatus(found.length===1?'✓ 読み取り完了！そのままQRを見せられます':`✓ ${found.length}件検出（下のボタンで切替可）`);
+  return true;
+}
+function renderInstantCandidates(codes,activeCode){
+  const wrap=document.getElementById('instantCandidates');
+  if(!codes||codes.length<=1){wrap.innerHTML='';return;}
+  wrap.innerHTML=codes.map(c=>`<button type="button" class="instant-chip${c===activeCode?' active':''}" onclick="selectInstantCandidate('${escapeHtml(c)}')">${escapeHtml(c)}</button>`).join('');
+}
+function selectInstantCandidate(code){
+  applyInstantCode(code);
+  document.querySelectorAll('#instantCandidates .instant-chip').forEach(b=>b.classList.toggle('active',b.textContent===code));
+}
+function applyInstantCode(code){document.getElementById('scannedText').value=code;renderPasteQR();}
+function onPasteInput(){
+  const ta=document.getElementById('scannedText'),raw=ta.value;
+  if(/[\s\n]/.test(raw.trim())){
+    const valid=(raw.toUpperCase().match(/\b[A-Z0-9]{13}\b/g)||[]).filter(t=>/[A-Z]/.test(t)&&/[0-9]/.test(t));
+    if(valid.length>0){
+      ta.value=valid[0];renderInstantCandidates(valid,valid[0]);
+      setInstantStatus(valid.length>1?`✓ ${valid.length}件抽出（切替可）`:'✓ 13桁コードを自動抽出しました');
+    }
+  }
+  renderPasteQR();
+}
+function renderPasteQR(){
+  const txt=document.getElementById('scannedText').value.trim();
+  drawQR(txt,'','下のカメラでカードを読み取るか<br>コードを貼り付けてください');
+}
+function toggleKeyboard(){
+  const ta=document.getElementById('scannedText'),btn=document.getElementById('keyboardToggleBtn');
+  if(ta.getAttribute('inputmode')==='none'){ta.removeAttribute('inputmode');btn.textContent='キーボード禁止';btn.style.backgroundColor='#1a73e8';ta.focus();}
+  else{ta.setAttribute('inputmode','none');btn.textContent='キーボード許可';btn.style.backgroundColor='#5f6368';}
+}
+function clearText(){
+  const ta=document.getElementById('scannedText');ta.value='';
+  document.getElementById('instantCandidates').innerHTML='';setInstantStatus('');renderPasteQR();ta.focus();
+}
+
+function initWheel(elId,onChange){
+  const wheel=document.getElementById(elId);let timer=null;
+  wheel.addEventListener('scroll',()=>{
+    onChange(Math.round(wheel.scrollTop/ITEM_HEIGHT));
+    clearTimeout(timer);
+    timer=setTimeout(()=>{
+      const snapped=Math.round(wheel.scrollTop/ITEM_HEIGHT)*ITEM_HEIGHT;
+      if(Math.abs(wheel.scrollTop-snapped)>1)wheel.scrollTo({top:snapped,behavior:'smooth'});
+    },110);
+  },{passive:true});
+}
+function scrollWheelTo(elId,idx){document.getElementById(elId).scrollTo({top:idx*ITEM_HEIGHT,behavior:'smooth'});}
+function updateWheelRowUI(wheelId,attrName,idx,status){
+  const el=document.querySelector(`#${wheelId} [${attrName}="${idx}"]`);if(!el)return;
+  const info=getStatusDisplay(status);el.className='wheel-item '+info.cls;
+  const b=el.querySelector('.status-badge');if(b)b.textContent=info.label;
+}
+function getStatusDisplay(s){
+  if(s==='済')return{cls:'st-done',label:'済'};
+  if(s==='NG1')return{cls:'st-ng1',label:'NG1'};
+  if(s==='NG2')return{cls:'st-ng2',label:'NG2'};
+  if(s==='NG3')return{cls:'st-ng3',label:'NG3'};
+  return{cls:'',label:''};
+}
+function bindSlider(trackId,thumbId,fillId,onComplete){
+  const track=document.getElementById(trackId),thumb=document.getElementById(thumbId),fill=document.getElementById(fillId);
+  let dragging=false,startX=0,currentX=0,maxX=0;
+  function start(cx){
+    if(track.classList.contains('disabled'))return;
+    dragging=true;startX=cx;currentX=0;
+    maxX=Math.max(10,track.getBoundingClientRect().width-thumb.getBoundingClientRect().width-9);
+    thumb.classList.remove('animating');fill.classList.remove('animating');
+  }
+  function move(cx){
+    if(!dragging)return;
+    currentX=Math.max(0,Math.min(maxX,cx-startX));
+    thumb.style.transform=`translateX(${currentX}px)`;fill.style.width=`${currentX+50}px`;
+  }
+  function end(){
+    if(!dragging)return;
+    dragging=false;const ok=currentX>=maxX*0.78;
+    thumb.classList.add('animating');fill.classList.add('animating');
+    thumb.style.transform='translateX(0px)';fill.style.width='0px';
+    if(ok)onComplete();
+  }
+  thumb.addEventListener('touchstart',e=>{e.preventDefault();start(e.touches[0].clientX);},{passive:false});
+  window.addEventListener('touchmove',e=>{if(!dragging)return;e.preventDefault();move(e.touches[0].clientX);},{passive:false});
+  window.addEventListener('touchend',end);window.addEventListener('touchcancel',end);
+  thumb.addEventListener('mousedown',e=>{e.preventDefault();start(e.clientX);});
+  window.addEventListener('mousemove',e=>{if(!dragging)return;move(e.clientX);});
+  window.addEventListener('mouseup',end);
+}
+function drawQR(codeText,statusForOverlay,emptyMsg){
+  const container=document.getElementById('qrcode'),overlay=document.getElementById('usedOverlay'),stamp=document.getElementById('usedStamp');
+  if(!codeText){overlay.classList.remove('show');container.innerHTML=`<div class="placeholder-text">${emptyMsg||'コードがありません'}</div>`;return;}
+  container.innerHTML='';
+  new QRCode(container,{text:BASE_URL+codeText,width:200,height:200,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  if(statusForOverlay==='済'){stamp.textContent='使用済み';stamp.classList.remove('ng3');overlay.classList.add('show');}
+  else if(statusForOverlay==='NG3'){stamp.textContent='NG3 (破棄)';stamp.classList.add('ng3');overlay.classList.add('show');}
+  else{overlay.classList.remove('show');}
+}
+function showToast(elId,msg,autoHideMs){
+  const el=document.getElementById(elId);if(!el)return;
+  el.textContent=msg;clearTimeout(toastTimers[elId]);
+  if(autoHideMs>0)toastTimers[elId]=setTimeout(()=>{el.textContent='';},autoHideMs);
+}
+function escapeHtml(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+</script>
+</body>
+</html>
